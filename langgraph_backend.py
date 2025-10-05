@@ -1,6 +1,6 @@
 from langgraph.graph import StateGraph, START, END
 from typing import TypedDict, Annotated
-from langchain_core.messages import BaseMessage, HumanMessage
+from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph.message import add_messages
 from openai import OpenAI
@@ -9,35 +9,55 @@ import os
 
 load_dotenv()
 
-# Initialize OpenRouter client
+# ---------------------------
+# 1. Initialize OpenRouter LLM
+# ---------------------------
 llm = OpenAI(
     base_url="https://openrouter.ai/api/v1",
-    api_key=os.getenv("OPENROUTER_API_KEY"),
+    api_key=os.environ["OPENROUTER_API_KEY"]  # Must match secret name in Streamlit secrets
 )
 
+# ---------------------------
+# 2. Chat State
+# ---------------------------
 class ChatState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
 
+# ---------------------------
+# 3. Chat Node
+# ---------------------------
 def chat_node(state: ChatState):
     messages = state['messages']
     
-    # Convert to OpenAI-style messages
-    chat_messages = [
-        {"role": "user", "content": m.content} for m in messages if hasattr(m, "content")
-    ]
+    # Convert to OpenAI/OpenRouter format
+    chat_messages = []
+    for m in messages:
+        if hasattr(m, "content"):
+            role = "user" if isinstance(m, HumanMessage) else "assistant"
+            chat_messages.append({"role": role, "content": m.content})
     
+    # Call OpenRouter
     response = llm.chat.completions.create(
-        model="gpt-4o-mini",  # or any model you want from OpenRouter
+        model="gpt-4o-mini",
         messages=chat_messages
     )
     
-    # Extract text from response
+    # Extract assistant reply
     reply_text = response.choices[0].message.content
-    return {"messages": messages + [HumanMessage(content=reply_text)]}
+    
+    # Append as AIMessage
+    messages.append(AIMessage(content=reply_text))
+    
+    return {"messages": messages}
 
-# Checkpointer
+# ---------------------------
+# 4. Checkpointer
+# ---------------------------
 checkpointer = InMemorySaver()
 
+# ---------------------------
+# 5. Graph
+# ---------------------------
 graph = StateGraph(ChatState)
 graph.add_node("chat_node", chat_node)
 graph.add_edge(START, "chat_node")

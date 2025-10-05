@@ -3,6 +3,7 @@ from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph.message import add_messages
 from typing import TypedDict, Annotated
+from openai import OpenAI
 from dotenv import load_dotenv
 import sqlite3
 import os
@@ -10,10 +11,9 @@ import os
 load_dotenv()
 
 # Initialize LLM
-llm = ChatOpenAI(
-    model_name="gpt-3.5-turbo",
-    temperature=0,
-    openai_api_key=os.getenv("OPENROUTER_API_KEY"),
+llm = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=os.environ["OPENROUTER_API_KEY"]  # Must match secret name
 )
 
 class ChatState(TypedDict):

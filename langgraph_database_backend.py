@@ -13,7 +13,7 @@ load_dotenv()
 # Initialize LLM
 llm = OpenAI(
     base_url="https://openrouter.ai/api/v1",
-    api_key=os.environ["OPENROUTER_API_KEY"]  # Must match secret name
+    api_key=os.environ["OPENAI_API_KEY"]  # Must match secret name
 )
 
 class ChatState(TypedDict):

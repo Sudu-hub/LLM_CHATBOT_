@@ -14,7 +14,7 @@ load_dotenv()
 # ---------------------------
 llm = OpenAI(
     base_url="https://openrouter.ai/api/v1",
-    api_key=os.environ["OPENROUTER_API_KEY"]  # Must match secret name in Streamlit secrets
+    api_key=os.environ["OPENAI_API_KEY"]  # Must match secret name in Streamlit secrets
 )
 
 # ---------------------------
